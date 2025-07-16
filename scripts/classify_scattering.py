@@ -1,3 +1,8 @@
+import os
+import sys 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 from blis.data import traffic, cloudy, synthetic
 import argparse
 from sklearn.pipeline import Pipeline
@@ -15,7 +20,6 @@ import xgboost as xgb
 import numpy as np
 import pandas as pd
 import warnings
-import os
 from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
@@ -234,7 +238,13 @@ if __name__ == "__main__":
         save_name = f'{args.dataset}_{sub_dataset}_{wavelet_type}_{scattering_type}_{args.task_type}_{layer_list}_{args.largest_scale}_ignore_graph.csv'
     else:
         save_name = f'{args.dataset}_{sub_dataset}_{wavelet_type}_{scattering_type}_{args.task_type}_{layer_list}_{args.largest_scale}.csv'
-    df_results.to_csv(os.path.join('run_results', save_name), index = False)
+    save_dir='run_results'
+    if os.path.exists(save_dir):
+        df_results.to_csv(os.path.join(save_dir,save_name), index = False)
+    else:
+        os.mkdir(save_dir)
+        df_results.to_csv(os.path.join(save_dir,save_name), index = False)
+
 
     #Example : python classify_scattering.py --dataset=traffic --largest_scale=4 --sub_dataset=PEMS04 --scattering_type=blis --task_type=DAY
     #Example : python classify_scattering.py --dataset=partly_cloudy --sub_dataset=0001 --largest_scale=4 --scattering_type=blis --task_type=EMOTION3 --moment_list 1 --layer_list 1 2 3 --model SVC

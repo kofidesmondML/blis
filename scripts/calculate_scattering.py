@@ -1,6 +1,9 @@
+import sys 
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import matplotlib.pyplot as plt 
-import os
+
 import blis.models.scattering_transform as st 
 import blis.models.wavelets as wav 
 from blis import DATA_DIR
