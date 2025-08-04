@@ -12,6 +12,7 @@ import time
 
 # example usage: python calculate_scattering.py --scattering_type blis --wavelet_type W2 --largest_scale 4 --highest_moment 3 --dataset traffic --sub_dataset PEMS08
 
+print('Started')
 def validate_args(args):
     # Check if dataset is 'traffic' and sub_dataset is valid
     if args.dataset == 'traffic' and args.sub_dataset not in ['PEMS08', 'PEMS07', 'PEMS04', 'PEMS03']:
@@ -56,7 +57,8 @@ def main():
     # load adjacency matrix and signal
     A = np.load(os.path.join(dataset_dir, 'adjacency_matrix.npy'))
     x = np.load(os.path.join(dataset_dir, 'graph_signals.npy'))
-    import pdb; pdb.set_trace()
+    print('Adjacency matrix and signals loaded)')
+    #import pdb; pdb.set_trace()
     if len(x.shape) == 2:
         x = x[:,:,None]
     # ensure that we're working with symmetric matrices!
@@ -65,6 +67,7 @@ def main():
         wavelets = wav.get_W_2(A, args.largest_scale, low_pass_as_wavelet=(args.scattering_type == 'blis'))
     else:
         wavelets = wav.get_W_1(A, args.largest_scale, low_pass_as_wavelet=(args.scattering_type == 'blis'))
+    print('Started calculating')
     st.scattering_transform(x, args.scattering_type, wavelets, args.num_layers, args.highest_moment, processed_dir)
     
 if __name__ == "__main__":
