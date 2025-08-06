@@ -22,23 +22,65 @@ def get_M(A: np.ndarray) -> np.ndarray:
     M = np.diag(1 / np.sqrt(np.sum(A, axis=1)))
     return M
 
-def get_W_2(A, largest_scale, low_pass_as_wavelet=False):
-    P = get_P(A)
-    N = P.shape[0]
-    powered_P = P
+# def get_W_2(A, largest_scale, low_pass_as_wavelet=False):
+#     P = get_P(A)
+#     N = P.shape[0]
+#     powered_P = P
+#     if low_pass_as_wavelet:
+#         wavelets = np.zeros((largest_scale + 2, *P.shape))
+#     else:
+#         wavelets = np.zeros((largest_scale + 1, *P.shape))
+#     wavelets[0,:,:] = np.eye(N) - powered_P
+#     for scale in range(1, largest_scale + 1):
+#         Phi = powered_P @ (np.eye(N) - powered_P)
+#         wavelets[scale,:,:] = Phi
+#         powered_P = powered_P @ powered_P
+#     low_pass = powered_P
+#     if low_pass_as_wavelet:
+#         wavelets[-1,:,:] = low_pass
+#     return wavelets
+
+def get_W_2(A,largest_scale, low_pass_as_wavelet=False):
+    P=get_P(A)
+    N=P.shape[0]
     if low_pass_as_wavelet:
         wavelets = np.zeros((largest_scale + 2, *P.shape))
     else:
         wavelets = np.zeros((largest_scale + 1, *P.shape))
-    wavelets[0,:,:] = np.eye(N) - powered_P
-    for scale in range(1, largest_scale + 1):
-        Phi = powered_P @ (np.eye(N) - powered_P)
-        wavelets[scale,:,:] = Phi
-        powered_P = powered_P @ powered_P
-    low_pass = powered_P
-    if low_pass_as_wavelet:
-        wavelets[-1,:,:] = low_pass
-    return wavelets
+    wavelets[0,:,:] = np.eye(N) - P
+    prev= P @ wavelets[0,:,:]
+    for scale in range(1,largest_scale+1):
+        pow=2**(scale-1)
+        curr=prev.copy()
+        for _ in range(pow):
+            curr=P @ curr
+        wavelets[scale,:,:]=prev+curr
+        prev=curr
+    return wavelets    
+    
+    
+    
+    
+    
+    
+    
+    
+def compute_c_terms(P, x, num_terms):
+    n = P.shape[0]
+    I = np.eye(n)
+    c_terms = []
+    c0 = (I - P) @ x
+    c_terms.append(c0)
+    v_prev = P @ c0
+    for j in range(1, num_terms):
+        pow = 2 ** (j - 1)
+        v_curr = v_prev.copy()
+        for _ in range(pow):
+            v_curr = P @ v_curr
+        cj = v_prev + v_curr
+        c_terms.append(cj)
+        v_prev = v_curr
+    return c_terms    
 
 def get_W_1(A: np.ndarray, largest_scale: int, low_pass_as_wavelet=False) -> list:
     #import pdb; pdb.set_trace()
