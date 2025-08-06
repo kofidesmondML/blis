@@ -23,7 +23,7 @@ def main(args):
         print(f'Training {args.model} on dataset {args.dataset, args.sub_dataset} on task {args.task_type}')
     total_performance = []
     #for seed in [42,43,44,45,46]:
-    for seed in np.arange(1,3):
+    for seed in np.arange(1,5):
 
         if args.model == "GPS":
             transform = T.AddRandomWalkPE(walk_length=20, attr_name='pe')
@@ -107,7 +107,7 @@ def main(args):
                                 edge_in_channels = None,
                                 trainable_laziness = False)
         elif args.model == 'MLP':
-            raise ValueError("Not yet implemented (at least correctly lol)")
+            #raise ValueError("Not yet implemented (at least correctly lol)")
             model = MLP(in_features = mlp_in_dim, hidden_channels = args.hidden_dim, num_classes = num_classes)
         else:
             raise ValueError("Invalid model")
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     results_list = []
     model_list = args.model 
     if args.model[0] == 'all':
-        model_list = ['GCN', 'GAT', 'GIN', 'ChebNet', 'BlisNet', 'GNNML1', 'GNNML3', 'MLP']
+        model_list = ['GCN', 'GAT', 'GIN', 'ChebNet', 'BlisNet', 'GNNML1', 'GNNML3']
 
     for model in model_list:
         for sub_dataset in sub_datasets:

@@ -2,6 +2,7 @@ import numpy as np
 from itertools import product 
 import os
 
+print('Started running the scattering transform file')
 def relu(x):
     return x * (x > 0)
 
@@ -32,6 +33,7 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
     
     # save the zero order scattering coefficients:
     zero_save_dir = os.path.join(save_dir, f'layer_0')
+    print(f'This is the zero save dir: {zero_save_dir}')
     if not os.path.exists(zero_save_dir):
         os.makedirs(zero_save_dir)
     for moment_ind in range(highest_moment):
@@ -51,6 +53,7 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
 
         if save_dir is not None:
             layer_dir = os.path.join(save_dir, f'layer_{layer_num}')
+            print(f'this is the layer dir: {layer_dir}')
 
             if os.path.exists(layer_dir):
                 # pass over this iteration of the for loop
@@ -90,6 +93,7 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
                 os.makedirs(layer_dir)
             for moment_ind in range(highest_moment):
                 full_path = os.path.join(layer_dir, f"moment_{moment_ind + 1}.npy")
+                print(f'This is the full path {full_path}')
                 np.save(full_path, coeffs[:,:,:, moment_ind])
 
     #return coeffs     

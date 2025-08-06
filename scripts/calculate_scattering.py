@@ -51,6 +51,7 @@ def main():
 
     # the processed directory records scattering type and the largest wavelet scale
     processed_dir = os.path.join(dataset_dir, 'processed', args.scattering_type, args.wavelet_type, f'largest_scale_{args.largest_scale}')
+    print(processed_dir)
     if not os.path.exists(processed_dir):
         os.makedirs(processed_dir)
 
