@@ -9,7 +9,7 @@ def relu(x):
 def reverse_relu(x):
     return relu(-x)
 
-def scattering_transform(x, scattering_type, wavelets, num_layers, highest_moment, save_dir):
+def scattering_transform(x, scattering_type, wavelets, num_layers, highest_moment, save_dir,wavelet_type):
     '''
     Computes the graph scattering transform
 
@@ -69,20 +69,32 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
 
         # store the output
         coeffs = np.zeros((num_signals, (J*num_activation)**layer_num, num_features, highest_moment))
+        #print(f'This is the shape of coeffs: {coeffs.shape}')
 
         for ind, comb in enumerate(combinations):
             layer_out = x 
+            print(f'this is the shape of layer out: {layer_out.shape}')
             for layer in range(layer_num):
                 wavelet_index = comb[layer * 2]
+                print(f'this is the shape of wavelets in scattering transform initially: {wavelets.shape}')
                 activation = comb[layer * 2 + 1]
-                wavelet = wavelets[wavelet_index]
-                wavelet_transform = np.einsum('ik, nkf->nif', wavelet, layer_out)
+                if wavelet_type == 'W2':
+                    # For W2, wavelets is already pre-applied, so just pick the precomputed transform
+                    wavelet_transform = wavelets[:, :, wavelet_index, :]
+                else:
+                    wavelet = wavelets[wavelet_index]
+                    print(f'this is the shape of wavelet in scattering transform: {wavelet.shape}')
+                    wavelet_transform = np.einsum('ik, nkf->nif', wavelet, layer_out)
+                    #print(f'this is the shape of wavelet transform: {wavelet_transform.shape}')
+        
                 layer_out = activation(wavelet_transform)
-            
-            # the scattering transform along one path has now been calculated for all signals
-            # layer_out has shape [num_signals, num_vertices, num_features]
+                #print(f'this is the shape of layer out after transform: {layer_out.shape}')
+    
+    # the scattering transform along one path has now been calculated for all signals
+    # layer_out has shape [num_signals, num_vertices, num_features]
             for moment in range(1, highest_moment + 1):
-                coeffs[:, ind, :, moment-1] = np.sum(np.power(layer_out, moment), axis = 1)
+                coeffs[:, ind, :, moment-1] = np.sum(np.power(layer_out, moment), axis=1)
+
         
         # all of the coeffs have been calculated for a given layer and number of moments
         # write them to memory

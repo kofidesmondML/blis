@@ -22,65 +22,78 @@ def get_M(A: np.ndarray) -> np.ndarray:
     M = np.diag(1 / np.sqrt(np.sum(A, axis=1)))
     return M
 
-# def get_W_2(A, largest_scale, low_pass_as_wavelet=False):
-#     P = get_P(A)
-#     N = P.shape[0]
-#     powered_P = P
-#     if low_pass_as_wavelet:
-#         wavelets = np.zeros((largest_scale + 2, *P.shape))
-#     else:
-#         wavelets = np.zeros((largest_scale + 1, *P.shape))
-#     wavelets[0,:,:] = np.eye(N) - powered_P
-#     for scale in range(1, largest_scale + 1):
-#         Phi = powered_P @ (np.eye(N) - powered_P)
-#         wavelets[scale,:,:] = Phi
-#         powered_P = powered_P @ powered_P
-#     low_pass = powered_P
-#     if low_pass_as_wavelet:
-#         wavelets[-1,:,:] = low_pass
-#     return wavelets
-
-def get_W_2(A,largest_scale, low_pass_as_wavelet=False):
-    P=get_P(A)
-    N=P.shape[0]
+def get_W_2(A, largest_scale, low_pass_as_wavelet=False):
+    P = get_P(A)
+    N = P.shape[0]
+    powered_P = P
     if low_pass_as_wavelet:
         wavelets = np.zeros((largest_scale + 2, *P.shape))
     else:
         wavelets = np.zeros((largest_scale + 1, *P.shape))
-    wavelets[0,:,:] = np.eye(N) - P
-    prev= P @ wavelets[0,:,:]
-    for scale in range(1,largest_scale+1):
-        pow=2**(scale-1)
-        curr=prev.copy()
-        for _ in range(pow):
-            curr=P @ curr
-        wavelets[scale,:,:]=prev+curr
-        prev=curr
-    return wavelets    
+    wavelets[0,:,:] = np.eye(N) - powered_P
+    for scale in range(1, largest_scale + 1):
+        Phi = powered_P @ (np.eye(N) - powered_P)
+        wavelets[scale,:,:] = Phi
+        powered_P = powered_P @ powered_P
+    low_pass = powered_P
+    if low_pass_as_wavelet:
+        wavelets[-1,:,:] = low_pass
+    return wavelets
+
+def compute_W_2_transform(A, X, largest_scale, low_pass_as_wavelet=False):
+    P = get_P(A)
+    I = np.eye(P.shape[0])
+    
+    coeffs = [ (I - P) @ X ]
+    
+    a = coeffs[0].copy()
+    for j in range(1, largest_scale):
+        pow_val = 2**(j-1)
+        prev = a.copy()
+        for _ in range(pow_val):
+            prev = P @ prev
+        curr = prev.copy()
+        for _ in range(pow_val):
+            curr = P @ curr
+        a = prev + curr
+        coeffs.append(a)
+    
+    if low_pass_as_wavelet:
+        low_pass = a.copy()
+        for _ in range(2**(largest_scale-1)):
+            low_pass = P @ low_pass
+        coeffs.append(low_pass)
+    
+    return np.stack(coeffs, axis=2)
+            
     
     
     
-    
-    
-    
-    
-    
-def compute_c_terms(P, x, num_terms):
-    n = P.shape[0]
-    I = np.eye(n)
-    c_terms = []
-    c0 = (I - P) @ x
-    c_terms.append(c0)
-    v_prev = P @ c0
-    for j in range(1, num_terms):
-        pow = 2 ** (j - 1)
-        v_curr = v_prev.copy()
-        for _ in range(pow):
-            v_curr = P @ v_curr
-        cj = v_prev + v_curr
-        c_terms.append(cj)
-        v_prev = v_curr
-    return c_terms    
+# def compute_c_terms_plus(P, x, J):
+#     if J < 1:
+#         return []
+#     c_terms = [x - P.dot(x)]
+#     for j in range(1, J):
+#         a = c_terms[j-1]
+#         k = 2**(j-1)
+#         u = a.copy()
+#         for _ in range(k):
+#             u = P.dot(u)
+#         v = u.copy()
+#         for _ in range(k):
+#             v = P.dot(v)
+#         c_terms.append(u + v)
+#     return c_terms
+
+
+
+
+
+
+
+
+
+  
 
 def get_W_1(A: np.ndarray, largest_scale: int, low_pass_as_wavelet=False) -> list:
     #import pdb; pdb.set_trace()

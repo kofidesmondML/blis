@@ -58,18 +58,21 @@ def main():
     # load adjacency matrix and signal
     A = np.load(os.path.join(dataset_dir, 'adjacency_matrix.npy'))
     x = np.load(os.path.join(dataset_dir, 'graph_signals.npy'))
+    print(f'this is the shape of x initially: {x.shape}')
     print('Adjacency matrix and signals loaded)')
     #import pdb; pdb.set_trace()
     if len(x.shape) == 2:
         x = x[:,:,None]
+        print(f'this is the shape of x in calculate scattering: {x.shape}')
     # ensure that we're working with symmetric matrices!
     assert((A == A.T).all())
     if args.wavelet_type == 'W2':
-        wavelets = wav.get_W_2(A, args.largest_scale, low_pass_as_wavelet=(args.scattering_type == 'blis'))
+        wavelets = wav.compute_W_2_transform(A,x,args.largest_scale,low_pass_as_wavelet=(args.scattering_type == 'blis'))
+        print(f'this is the shape of wavelets in calculate: {wavelets.shape}')
     else:
         wavelets = wav.get_W_1(A, args.largest_scale, low_pass_as_wavelet=(args.scattering_type == 'blis'))
     print('Started calculating')
-    st.scattering_transform(x, args.scattering_type, wavelets, args.num_layers, args.highest_moment, processed_dir)
+    st.scattering_transform(x, args.scattering_type, wavelets, args.num_layers, args.highest_moment, processed_dir,args.wavelet_type)
     
 if __name__ == "__main__":
     start_time = time.time()  # Record the start time
