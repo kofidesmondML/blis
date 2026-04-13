@@ -9,7 +9,7 @@ def relu(x):
 def reverse_relu(x):
     return relu(-x)
 
-def scattering_transform(x, scattering_type, wavelets, num_layers, highest_moment, save_dir,wavelet_type):
+def scattering_transform(x, scattering_type, input_wavelets, num_layers, highest_moment, save_dir,wavelet_type):
     '''
     Computes the graph scattering transform
 
@@ -24,13 +24,22 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
         raise ValueError("Invalid scattering type. Accepted values are 'blis' or 'modulus'.")
 
     if len(x.shape) == 3:
-        num_signals, N ,num_features = x.shape 
+        num_signals, N ,num_features = x.shape
     if len(x.shape) == 2:
-        num_signals, N = x.shape 
+        num_signals, N = x.shape
         num_features= 1
-    
-    J = len(wavelets)
-    
+
+    #print(f'this is x at the beginning : {x[0]}')
+
+    print('The number of signals is', num_signals)
+    print('The number of features is', num_features)
+    print('The number of wavelets is', N)
+    print(f'this is the shape of x initially in scattering transform: {x.shape}')
+
+    print(f'this is the shape of wavelets in scattering transform initially: {input_wavelets.shape}')
+    J = len(input_wavelets)
+    print(f'this is J = {J}')
+
     # save the zero order scattering coefficients:
     zero_save_dir = os.path.join(save_dir, f'layer_0')
     print(f'This is the zero save dir: {zero_save_dir}')
@@ -41,14 +50,14 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
         coeffs_zero = np.zeros((num_signals, 1, num_features, highest_moment))
 
         for moment in range(1, highest_moment + 1):
-            coeffs_zero[:, 0, :, moment-1] = np.sum(np.power(x, moment), axis = 1)  
+            coeffs_zero[:, 0, :, moment-1] = np.sum(np.power(x, moment), axis = 1)
 
             np.save(full_path, coeffs_zero[:,:,:,moment_ind])
 
     # num_layers is the LARGEST layer size
     # layer_num is the largest layer size within the loop
-    # layer is the layer number looping up to layer_num 
-    
+    # layer is the layer number looping up to layer_num
+
     for layer_num in range(1, num_layers+1):
 
         if save_dir is not None:
@@ -63,43 +72,55 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
         if scattering_type == 'blis':
             combinations = list(product(range(J), [relu, reverse_relu], repeat = layer_num))
             num_activation = 2
+            #print(f'this is the number of combinations: {combinations}')
         else:
             combinations = list(product(range(J), [np.abs], repeat = layer_num))
             num_activation = 1
 
         # store the output
         coeffs = np.zeros((num_signals, (J*num_activation)**layer_num, num_features, highest_moment))
-        #print(f'This is the shape of coeffs: {coeffs.shape}')
+        print(f'This is the shape of coeffs: {coeffs.shape}')
+
 
         for ind, comb in enumerate(combinations):
-            layer_out = x 
-            print(f'this is the shape of layer out: {layer_out.shape}')
+            print(f'this is the number of iterations: {ind+1} out of {len(combinations)}')
+            layer_out = x
+            #print(f'this is the shape of layer out: {layer_out.shape}')
             for layer in range(layer_num):
                 wavelet_index = comb[layer * 2]
-                print(f'this is the shape of wavelets in scattering transform initially: {wavelets.shape}')
+                #print(f'This is the wavelet index: {wavelet_index}')
+                #print(f'this is the shape of wavelets in scattering transform initially: {wavelets.shape}')
                 activation = comb[layer * 2 + 1]
                 if wavelet_type == 'W2':
-                    # For W2, wavelets is already pre-applied, so just pick the precomputed transform
-                    wavelet_transform = wavelets[:, :, wavelet_index, :]
+                    wavelet=input_wavelets[wavelet_index]
+                    wavelet_transform=input_wavelets
+                    #print(f'this is the shape of wavelet in scattering transform: {wavelet.shape}')
+                    #print(f'this is the shape of layer out right before einstein summation: {layer_out.shape}')
+                    wavelet_transform=np.einsum('ik, nkf->nif', wavelet, layer_out)
+                    print(f"this is the dimension of the wavelet transform:{wavelet_transform.shape}")
                 else:
-                    wavelet = wavelets[wavelet_index]
-                    print(f'this is the shape of wavelet in scattering transform: {wavelet.shape}')
+                    wavelet = input_wavelets[wavelet_index]
+                    #print(f'this is the shape of wavelet in scattering transform: {wavelet.shape}')
                     wavelet_transform = np.einsum('ik, nkf->nif', wavelet, layer_out)
                     #print(f'this is the shape of wavelet transform: {wavelet_transform.shape}')
-        
+
                 layer_out = activation(wavelet_transform)
-                #print(f'this is the shape of layer out after transform: {layer_out.shape}')
-    
+                print(f'this is the shape of layer out after transform: {layer_out.shape}')
+ 
     # the scattering transform along one path has now been calculated for all signals
     # layer_out has shape [num_signals, num_vertices, num_features]
             for moment in range(1, highest_moment + 1):
+                
+                print(moment)
+                print(f'this is the layer out dimension in moment: {layer_out.shape}')
                 coeffs[:, ind, :, moment-1] = np.sum(np.power(layer_out, moment), axis=1)
+                print(f'this is the shape of coeffs after moment: {coeffs.shape}')
 
-        
+
         # all of the coeffs have been calculated for a given layer and number of moments
         # write them to memory
 
-        #create a directory for each layer 
+        #create a directory for each layer
         if save_dir is not None:
             if not os.path.exists(layer_dir):
                 os.makedirs(layer_dir)
@@ -108,4 +129,4 @@ def scattering_transform(x, scattering_type, wavelets, num_layers, highest_momen
                 print(f'This is the full path {full_path}')
                 np.save(full_path, coeffs[:,:,:, moment_ind])
 
-    #return coeffs     
+    #return coeffs

@@ -50,7 +50,7 @@ def main():
     dataset_dir = os.path.join(DATA_DIR, args.dataset, args.sub_dataset)
 
     # the processed directory records scattering type and the largest wavelet scale
-    processed_dir = os.path.join(dataset_dir, 'processed', args.scattering_type, args.wavelet_type, f'largest_scale_{args.largest_scale}')
+    processed_dir = os.path.join(dataset_dir,  'processed', args.scattering_type, args.wavelet_type, f'largest_scale_{args.largest_scale}')
     print(processed_dir)
     if not os.path.exists(processed_dir):
         os.makedirs(processed_dir)
@@ -67,11 +67,13 @@ def main():
     # ensure that we're working with symmetric matrices!
     assert((A == A.T).all())
     if args.wavelet_type == 'W2':
-        wavelets = wav.compute_W_2_transform(A,x,args.largest_scale,low_pass_as_wavelet=(args.scattering_type == 'blis'))
+        wavelets= wav.get_W_2(A, args.largest_scale, low_pass_as_wavelet=(args.scattering_type == 'blis'))
+        #wavelets = wav.compute_W_2_transform(A,x,args.largest_scale,low_pass_as_wavelet=(args.scattering_type == 'blis'))
         print(f'this is the shape of wavelets in calculate: {wavelets.shape}')
     else:
         wavelets = wav.get_W_1(A, args.largest_scale, low_pass_as_wavelet=(args.scattering_type == 'blis'))
     print('Started calculating')
+    print(f"this is the shape of x in pre-calculating scattering: {x.shape}")
     st.scattering_transform(x, args.scattering_type, wavelets, args.num_layers, args.highest_moment, processed_dir,args.wavelet_type)
     
 if __name__ == "__main__":
