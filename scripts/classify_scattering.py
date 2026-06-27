@@ -23,6 +23,8 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
+print(f'this is the initiating the classifier')
+
 def run_classifier_scattering(args,scattering_dict):
     full_test_scores = []
     full_train_scores = []
@@ -119,6 +121,7 @@ def run_classifier_scattering(args,scattering_dict):
             }
 
         clf = GridSearchCV(pipeline, param_grid, cv = 3)
+        print(f"Fitting model {args.model} for dataset {args.dataset} with sub-dataset {args.sub_dataset}, scattering type {args.scattering_type}, wavelet type {scattering_dict['wavelet_type']}, largest scale {scattering_dict['scale_type']}, task type {args.task_type}, PCA variance {args.PCA_variance}, moment list {args.moment_list}, layer list {args.layer_list}")
         clf.fit(X_train, y_train)
         
         y_pred = clf.predict(X_test)

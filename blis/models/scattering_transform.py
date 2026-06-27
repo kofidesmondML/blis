@@ -72,7 +72,7 @@ def scattering_transform(x, scattering_type, input_wavelets, num_layers, highest
         if scattering_type == 'blis':
             combinations = list(product(range(J), [relu, reverse_relu], repeat = layer_num))
             num_activation = 2
-            #print(f'this is the number of combinations: {combinations}')
+            print(f'this is the number of combinations: {len(combinations)}')
         else:
             combinations = list(product(range(J), [np.abs], repeat = layer_num))
             num_activation = 1
@@ -88,12 +88,13 @@ def scattering_transform(x, scattering_type, input_wavelets, num_layers, highest
             #print(f'this is the shape of layer out: {layer_out.shape}')
             for layer in range(layer_num):
                 wavelet_index = comb[layer * 2]
-                #print(f'This is the wavelet index: {wavelet_index}')
+                print(f'This is the wavelet index: {wavelet_index}')
                 #print(f'this is the shape of wavelets in scattering transform initially: {wavelets.shape}')
                 activation = comb[layer * 2 + 1]
+                print(f'This is the activation function: {activation}')
                 if wavelet_type == 'W2':
                     wavelet=input_wavelets[wavelet_index]
-                    wavelet_transform=input_wavelets
+                    #wavelet_transform=input_wavelets
                     #print(f'this is the shape of wavelet in scattering transform: {wavelet.shape}')
                     #print(f'this is the shape of layer out right before einstein summation: {layer_out.shape}')
                     wavelet_transform=np.einsum('ik, nkf->nif', wavelet, layer_out)
