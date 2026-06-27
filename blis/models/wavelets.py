@@ -24,6 +24,7 @@ def get_M(A: np.ndarray) -> np.ndarray:
 
 def get_W_2(A, largest_scale, low_pass_as_wavelet=False):
     P = get_P(A)
+    print(f'This is the shape of P in the get_W_2  {P.shape}')
     N = P.shape[0]
     powered_P = P
     if low_pass_as_wavelet:
@@ -38,17 +39,34 @@ def get_W_2(A, largest_scale, low_pass_as_wavelet=False):
     low_pass = powered_P
     if low_pass_as_wavelet:
         wavelets[-1,:,:] = low_pass
+    print(f'This is the shape of wavelets in the get_W_2: {wavelets.shape}')
     return wavelets
 
 def compute_W_2_transform(A, X, largest_scale, low_pass_as_wavelet=False):
+    if X.ndim == 2:
+        X = X[:, :, None]
+
+    p, n, _ = X.shape
+    X=X.transpose(2,1,0)
+    print(f'this is n: {n}')
     P = get_P(A)
-    I = np.eye(P.shape[0])
-    
-    coeffs = [ (I - P) @ X ]
-    
-    a = coeffs[0].copy()
-    for j in range(1, largest_scale):
-        pow_val = 2**(j-1)
+    m = A.shape[0]
+    print(f'This is the shape of P in the compute_W_2_transform: {P.shape}')
+    I = np.eye(m)
+    coeffs = []
+    #C0 = np.zeros((m, p, 3))
+    # for i in range(p):
+    #     x_i = X[i, :, 0]
+    #     print(f'this is the x_i: {x_i.shape}')
+    #     C0[:, i, 0] = (I - P) @ x_i
+    print(f'this is the shape  of X: {X.shape}')
+    print(f'this is the shape of I-P :{ (I - P).shape}')
+    C0=(I-P) @ X
+
+    coeffs.append(C0)
+    a = C0.copy()
+    for j in range(1, largest_scale+1):
+        pow_val = 2 ** (j - 1)
         prev = a.copy()
         for _ in range(pow_val):
             prev = P @ prev
@@ -57,15 +75,17 @@ def compute_W_2_transform(A, X, largest_scale, low_pass_as_wavelet=False):
             curr = P @ curr
         a = prev + curr
         coeffs.append(a)
-    
+    print(f'this is the shape of coeffs before the largest scale: {len(coeffs)}')
     if low_pass_as_wavelet:
         low_pass = a.copy()
-        for _ in range(2**(largest_scale-1)):
+        for _ in range(2 ** (largest_scale - 1)):
             low_pass = P @ low_pass
         coeffs.append(low_pass)
-    
-    return np.stack(coeffs, axis=2)
+    coeffs_array = np.stack(coeffs, axis=0)
+    print(f'this is the shape of coeffs_array before transpose: {coeffs_array.shape}')
+    return coeffs_array.transpose(3,2,1,0)
             
+    
     
     
     
