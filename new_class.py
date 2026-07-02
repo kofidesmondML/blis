@@ -1,23 +1,9 @@
-import sys
 import os
 import numpy as np
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-print(os.getcwd())
-
-data_path = os.path.join(os.path.dirname(__file__), 'data', 'traffic', 'PEMS08')
-label_path = os.path.join(data_path, 'DAY', 'label.npy')
-adjacency_path = os.path.join(data_path, 'adjacency_matrix.npy')
-signal_path = os.path.join(data_path, 'graph_signals.npy')
-
-print(data_path)
-print(label_path)
-print(adjacency_path)
-print(signal_path)
-
 
 class GraphScattering:
-    def __init__(self, label_path, adjacency_path, signal_path):
+    def __init__(self, label_path=None, adjacency_path=None, signal_path=None):
         self.label_path = label_path
         self.adjacency_path = adjacency_path
         self.signal_path = signal_path
@@ -35,49 +21,45 @@ class GraphScattering:
 
         if self.A is not None:
             print(f"Loaded adjacency matrix A with shape: {self.A.shape}")
+
         if self.X is not None:
             print(f"Loaded graph signals X with shape: {self.X.shape}")
+
         if self.labels is not None:
             print(f"Loaded labels with shape: {self.labels.shape}")
 
         return self.A, self.X, self.labels
 
-    def get_P(self, A: np.ndarray) -> np.ndarray:
+    def get_P(self, A):
         A = np.asarray(A, dtype=float)
 
-        if A.ndim != 2 or A.shape[0] != A.shape[1]:
-            raise ValueError(f"A must be square, got shape {A.shape}")
-
         d_arr = np.sum(A, axis=0)
+
         d_arr_inv = np.divide(
             1.0,
             d_arr,
             out=np.zeros_like(d_arr, dtype=float),
             where=d_arr != 0,
         )
+
         D_inv = np.diag(d_arr_inv)
+
         P = 0.5 * (np.eye(A.shape[0]) + A @ D_inv)
+
         return P
 
     def compute_W_2_transform(self, A, X, largest_scale, low_pass_as_wavelet=True):
         A = np.asarray(A, dtype=float)
         X = np.asarray(X, dtype=float)
 
-        if largest_scale < 0:
-            raise ValueError("largest_scale must be nonnegative.")
-
         if X.ndim == 1:
             X = X[:, None]
-
-        if A.ndim != 2 or A.shape[0] != A.shape[1]:
-            raise ValueError(f"A must be square, got shape {A.shape}")
 
         n_nodes = A.shape[0]
 
         if X.shape[0] != n_nodes:
             raise ValueError(
-                f"Node mismatch: X has {X.shape[0]} rows, but A is {n_nodes}x{n_nodes}. "
-                f"X must have shape (n_nodes, n_features)."
+                f"Node mismatch: X has {X.shape[0]} rows, but A is {n_nodes}x{n_nodes}."
             )
 
         P = self.get_P(A)
@@ -94,14 +76,17 @@ class GraphScattering:
             pow_val = 2 ** (j - 1)
 
             prev = a.copy()
+
             for _ in range(pow_val):
                 prev = P @ prev
 
             curr = prev.copy()
+
             for _ in range(pow_val):
                 curr = P @ curr
 
             a_j = prev - curr
+
             coeffs.append(a_j)
 
         if low_pass_as_wavelet:
@@ -111,103 +96,17 @@ class GraphScattering:
                 low_pass_steps = 2 ** (largest_scale - 1)
 
             low_pass = X.copy()
+
             for _ in range(low_pass_steps):
                 low_pass = P @ low_pass
 
             coeffs.append(low_pass)
 
         out = np.concatenate(coeffs, axis=1)
+
         return out
 
-    def blis_action(self, X):
-        print(f"this is the shape of X before BLIS action: {X.shape}")
-        X1 = self.relu(X)
-        X2 = self.relu(-X)
-        X_new = np.concatenate([X1, X2], axis=1)
-        print(f"this is the shape of X_new after BLIS action: {X_new.shape}")
-        return X_new
-
-    def blis_coeff(self, A, X, J, L, low_pass_as_wavelet=True):
-        B = np.asarray(X, dtype=float)
-
-        if B.ndim == 1:
-            B = B[:, None]
-
-        for l in range(L):
-            B = self.compute_W_2_transform(
-                A,
-                B,
-                largest_scale=J,
-                low_pass_as_wavelet=low_pass_as_wavelet,
-            )
-            print(f"this is the shape of B after W_2 layer {l + 1}: {B.shape}")
-
-            B = self.blis_action(B)
-            print(f"this is the shape of B after BLIS action {l + 1}: {B.shape}")
-
-        return B
-
-    def global_pool_l1(self, B):
-        B = np.asarray(B, dtype=float)
-
-        if B.ndim != 2:
-            raise ValueError(f"B must have shape (n_nodes, H), got {B.shape}")
-
-        return np.sum(np.abs(B), axis=0)
-
-    def compute_moments(self, B, Q=4, flatten=True):
-        B = np.asarray(B, dtype=float)
-
-        if B.ndim != 2:
-            raise ValueError(f"B must have shape (n_nodes, H), got {B.shape}")
-
-        absB = np.abs(B)
-        moments = [np.sum(absB ** q, axis=0) for q in range(1, Q + 1)]
-        moments = np.stack(moments, axis=0)
-
-        if flatten:
-            return moments.reshape(-1)
-
-        return moments
-
-    def blis_global_features(self, A, X, J, L, Q=4, low_pass_as_wavelet=True, return_B=False):
-        X = np.asarray(X, dtype=float)
-
-        if X.ndim == 1:
-            X = X[:, None]
-
-        B = self.blis_coeff(
-            A,
-            X,
-            J=J,
-            L=L,
-            low_pass_as_wavelet=low_pass_as_wavelet,
-        )
-
-        pooled_l1 = self.global_pool_l1(B)
-        moment_matrix = self.compute_moments(B, Q=Q, flatten=False)
-        moment_features = moment_matrix.reshape(-1)
-
-        print(f"this is the shape of B: {B.shape}")
-        print(f"this is the shape of pooled_l1: {pooled_l1.shape}")
-        print(f"this is the shape of moment_matrix: {moment_matrix.shape}")
-        print(f"this is the shape of moment_features: {moment_features.shape}")
-
-        if return_B:
-            return pooled_l1, moment_features, moment_matrix, B
-
-        return pooled_l1, moment_features, moment_matrix
-
-    def calculate_scattering(self, A, X, J, Q, layer_num=2):
-        if J < 0:
-            raise ValueError("J must be nonnegative.")
-
-        if Q < 1:
-            raise ValueError("Q must be at least 1.")
-
-        if layer_num < 1:
-            raise ValueError("layer_num must be at least 1.")
-
+    def calculate_scattering(self, A, X, J, Q, layer_num=1):
         X = np.asarray(X, dtype=float)
 
         if X.ndim == 1:
@@ -232,6 +131,7 @@ class GraphScattering:
                     B[:, path_index, 0, q - 1] = moment
 
                 path_index += 1
+
                 return
 
             x1 = self.compute_W_2_transform(
@@ -242,9 +142,9 @@ class GraphScattering:
             )
 
             signal_width = current_signal.shape[1]
-            S1 = x1.shape[1] // signal_width
+            num_wavelets_here = x1.shape[1] // signal_width
 
-            for j in range(S1):
+            for j in range(num_wavelets_here):
                 start = j * signal_width
                 end = (j + 1) * signal_width
 
@@ -257,16 +157,131 @@ class GraphScattering:
 
         return B
 
+    def save_scattering_moments(
+        self,
+        A,
+        X,
+        data_dir,
+        dataset="traffic",
+        sub_dataset="PEMS08",
+        scattering_type="blis",
+        wavelet_type="W2",
+        largest_scale=4,
+        highest_moment=3,
+        layer_list=(1, 2, 3),
+        force_recompute=False,
+    ):
+        X = np.asarray(X, dtype=float)
+
+        if X.ndim == 2:
+            X = X[:, :, None]
+
+        T, n_nodes, n_features = X.shape
+
+        save_base = os.path.join(
+            data_dir,
+            dataset,
+            sub_dataset,
+            "processed",
+            scattering_type,
+            wavelet_type,
+            f"largest_scale_{largest_scale}",
+        )
+
+        os.makedirs(save_base, exist_ok=True)
+
+        print(f"Saving scattering moments to: {save_base}")
+        print(f"A shape: {A.shape}")
+        print(f"X shape: {X.shape}")
+        print(f"T: {T}")
+        print(f"n_nodes: {n_nodes}")
+        print(f"n_features: {n_features}")
+
+        for layer_num in layer_list:
+            print("=" * 80)
+            print(f"Computing layer_{layer_num}")
+            print("=" * 80)
+
+            layer_dir = os.path.join(save_base, f"layer_{layer_num}")
+            os.makedirs(layer_dir, exist_ok=True)
+
+            expected_files = [
+                os.path.join(layer_dir, f"moment_{q}.npy")
+                for q in range(1, highest_moment + 1)
+            ]
+
+            if not force_recompute and all(os.path.exists(path) for path in expected_files):
+                print(f"Skipping layer_{layer_num}; moment files already exist.")
+                continue
+
+            all_moments = [[] for _ in range(highest_moment)]
+
+            for f in range(n_features):
+                print(f"Computing channel {f + 1}/{n_features}")
+
+                X_channel = X[:, :, f].T
+
+                print(f"X_channel shape: {X_channel.shape}")
+
+                B = self.calculate_scattering(
+                    A,
+                    X_channel,
+                    J=largest_scale,
+                    Q=highest_moment,
+                    layer_num=layer_num,
+                )
+
+                print(f"B shape: {B.shape}")
+
+                for q in range(highest_moment):
+                    all_moments[q].append(B[:, :, :, q])
+
+            for q in range(highest_moment):
+                moment_q = np.concatenate(all_moments[q], axis=2)
+                moment_q = moment_q.astype(np.float32)
+
+                save_path = os.path.join(layer_dir, f"moment_{q + 1}.npy")
+
+                np.save(save_path, moment_q)
+
+                print(f"Saved: {save_path}")
+                print(f"moment_{q + 1} shape: {moment_q.shape}")
+
+        print("Finished saving scattering moments.")
+
 
 if __name__ == "__main__":
-    gs2 = GraphScattering(label_path, adjacency_path, signal_path)
-    A_real, X_real, labels_real = gs2.load_data()
+    data_path = os.path.join(
+        os.path.dirname(__file__),
+        "data",
+        "traffic",
+        "PEMS08",
+    )
 
-    X_real = X_real[:, :, -1].T
-    print(f"this is the shape of X_real after slicing/transposing: {X_real.shape}")
+    label_path = os.path.join(data_path, "DAY", "label.npy")
+    adjacency_path = os.path.join(data_path, "adjacency_matrix.npy")
+    signal_path = os.path.join(data_path, "graph_signals.npy")
 
-    B1 = gs2.calculate_scattering(A_real, X_real, J=4, Q=3, layer_num=1)
-    print(f"this is the shape of B1/layer_1: {B1.shape}")
+    gs = GraphScattering(
+        label_path=label_path,
+        adjacency_path=adjacency_path,
+        signal_path=signal_path,
+    )
 
-    B2 = gs2.calculate_scattering(A_real, X_real, J=4, Q=3, layer_num=2)
-    print(f"this is the shape of B2/layer_2: {B2.shape}")
+    A_real, X_real, labels_real = gs.load_data()
+
+    data_dir = os.path.join(os.path.dirname(__file__), "data")
+
+    gs.save_scattering_moments(
+        A=A_real,
+        X=X_real,
+        data_dir=data_dir,
+        dataset="traffic",
+        sub_dataset="PEMS08",
+        scattering_type="blis",
+        wavelet_type="W2",
+        largest_scale=4,
+        highest_moment=3,
+        layer_list=(1, 2, 3),
+        force_recompute=True,
+    )
