@@ -1,0 +1,26 @@
+Computing BLIS scattering moments for PEMS03
+Date: Thu Jul  2 12:34:18 MDT 2026
+Python: /bsuhome/desmondboateng/miniforge3/envs/blis/bin/python
+Started running the scattering transform file
+Started
+/bsuscratch/desmondboateng/blis/blis/data/traffic/PEMS03/processed/blis/W2/largest_scale_4
+this is the shape of x initially: (26208, 358, 1)
+Adjacency matrix and signals loaded)
+This is the shape of P in the get_W_2  (358, 358)
+This is the shape of wavelets in the get_W_2: (6, 358, 358)
+this is the shape of wavelets in calculate: (6, 358, 358)
+Started calculating
+this is the shape of x in pre-calculating scattering: (26208, 358, 1)
+The number of signals is 26208
+The number of features is 1
+The number of wavelets is 358
+this is the shape of x initially in scattering transform: (26208, 358, 1)
+this is the shape of wavelets in scattering transform initially: (6, 358, 358)
+this is J = 6
+This is the zero save dir: /bsuscratch/desmondboateng/blis/blis/data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_0
+this is the layer dir: /bsuscratch/desmondboateng/blis/blis/data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_1
+this is the layer dir: /bsuscratch/desmondboateng/blis/blis/data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_2
+this is the layer dir: /bsuscratch/desmondboateng/blis/blis/data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_3
+Elapsed time: 1.14 seconds
+Finished PEMS03
+Date: Thu Jul  2 12:34:43 MDT 2026

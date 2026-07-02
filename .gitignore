@@ -173,3 +173,5 @@ scripts/results_sym/*
 scripts/shallow_CV_results/*
 scripts/run_results/*
 scripts/job_outputs/*
+data.zip
+data/
