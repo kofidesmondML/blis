@@ -1,0 +1,854 @@
+Starting GPU BLIS W2 run for PEMS03
+Date: Thu Jul  2 17:15:12 MDT 2026
+Working directory: /bsuscratch/desmondboateng/blis
+Python: /bsuhome/desmondboateng/miniforge3/envs/blis/bin/python
+CUDA_VISIBLE_DEVICES: 0
+==========================================================================================
+BLIS W2 MOMENTS FROM new_class.py + TORCH CLASSIFICATION
+==========================================================================================
+Device: cuda
+GPU: Tesla V100-PCIE-16GB
+==========================================================================================
+DATASET: PEMS03
+==========================================================================================
+A shape: (358, 358)
+X shape: (26208, 358, 1)
+Saving scattering moments to: data/traffic/PEMS03/processed/blis/W2/largest_scale_4
+A shape: (358, 358)
+X shape: (26208, 358, 1)
+T: 26208
+n_nodes: 358
+n_features: 1
+================================================================================
+Computing layer_1
+================================================================================
+Computing channel 1/1
+X_channel shape: (358, 26208)
+B shape: (26208, 12, 1, 3)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_1/moment_1.npy
+moment_1 shape: (26208, 12, 1)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_1/moment_2.npy
+moment_2 shape: (26208, 12, 1)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_1/moment_3.npy
+moment_3 shape: (26208, 12, 1)
+================================================================================
+Computing layer_2
+================================================================================
+Computing channel 1/1
+X_channel shape: (358, 26208)
+B shape: (26208, 144, 1, 3)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_2/moment_1.npy
+moment_1 shape: (26208, 144, 1)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_2/moment_2.npy
+moment_2 shape: (26208, 144, 1)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_2/moment_3.npy
+moment_3 shape: (26208, 144, 1)
+================================================================================
+Computing layer_3
+================================================================================
+Computing channel 1/1
+X_channel shape: (358, 26208)
+B shape: (26208, 1728, 1, 3)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_3/moment_1.npy
+moment_1 shape: (26208, 1728, 1)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_3/moment_2.npy
+moment_2 shape: (26208, 1728, 1)
+Saved: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_3/moment_3.npy
+moment_3 shape: (26208, 1728, 1)
+Finished saving scattering moments.
+Loading: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_1/moment_1.npy
+Loading: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_2/moment_1.npy
+Loading: data/traffic/PEMS03/processed/blis/W2/largest_scale_4/layer_3/moment_1.npy
+X_features shape: (26208, 1884)
+------------------------------------------------------------------------------------------
+TASK: HOUR
+------------------------------------------------------------------------------------------
+y shape: (26208,)
+classes: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23]
+------------------------------------------------------------------------------------------
+MODEL: LR
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 28.695653
+Epoch 50, loss = 2.504136
+Epoch 100, loss = 2.440366
+accuracy = 0.202187
+balanced_accuracy = 0.205954
+macro_f1 = 0.131773
+weighted_f1 = 0.134267
+macro_precision = 0.131897
+macro_recall = 0.205954
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 31.459461
+Epoch 50, loss = 2.517778
+Epoch 100, loss = 2.446517
+accuracy = 0.185910
+balanced_accuracy = 0.190947
+macro_f1 = 0.119700
+weighted_f1 = 0.115784
+macro_precision = 0.095857
+macro_recall = 0.190947
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 31.430945
+Epoch 50, loss = 2.602481
+Epoch 100, loss = 2.444002
+accuracy = 0.188962
+balanced_accuracy = 0.186492
+macro_f1 = 0.114469
+weighted_f1 = 0.113686
+macro_precision = 0.097044
+macro_recall = 0.186492
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 35.159049
+Epoch 50, loss = 2.565325
+Epoch 100, loss = 2.459139
+accuracy = 0.160224
+balanced_accuracy = 0.165174
+macro_f1 = 0.091002
+weighted_f1 = 0.089346
+macro_precision = 0.070238
+macro_recall = 0.165174
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 27.130211
+Epoch 50, loss = 2.622296
+Epoch 100, loss = 2.451378
+accuracy = 0.192777
+balanced_accuracy = 0.194807
+macro_f1 = 0.123948
+weighted_f1 = 0.121837
+macro_precision = 0.113848
+macro_recall = 0.194807
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: SVC
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 10.821603
+Epoch 50, loss = 0.418850
+Epoch 100, loss = 0.398789
+accuracy = 0.179807
+balanced_accuracy = 0.181124
+macro_f1 = 0.102345
+weighted_f1 = 0.101260
+macro_precision = 0.082723
+macro_recall = 0.181124
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 12.052092
+Epoch 50, loss = 0.419401
+Epoch 100, loss = 0.397625
+accuracy = 0.164293
+balanced_accuracy = 0.166734
+macro_f1 = 0.088765
+weighted_f1 = 0.088664
+macro_precision = 0.065798
+macro_recall = 0.166734
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 10.523613
+Epoch 50, loss = 0.419271
+Epoch 100, loss = 0.397714
+accuracy = 0.166328
+balanced_accuracy = 0.172006
+macro_f1 = 0.091974
+weighted_f1 = 0.089040
+macro_precision = 0.069057
+macro_recall = 0.172006
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 14.445547
+Epoch 50, loss = 0.423000
+Epoch 100, loss = 0.400545
+accuracy = 0.150814
+balanced_accuracy = 0.150715
+macro_f1 = 0.080275
+weighted_f1 = 0.080865
+macro_precision = 0.091131
+macro_recall = 0.150715
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 8.012125
+Epoch 50, loss = 0.417344
+Epoch 100, loss = 0.398625
+accuracy = 0.173957
+balanced_accuracy = 0.174688
+macro_f1 = 0.087349
+weighted_f1 = 0.086728
+macro_precision = 0.071755
+macro_recall = 0.174688
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: MLP
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 2.893612
+Epoch 50, loss = 1.969141
+Epoch 100, loss = 1.929907
+accuracy = 0.270600
+balanced_accuracy = 0.264983
+macro_f1 = 0.202558
+weighted_f1 = 0.207497
+macro_precision = 0.202387
+macro_recall = 0.264983
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 2.898072
+Epoch 50, loss = 1.980219
+Epoch 100, loss = 1.930406
+accuracy = 0.267040
+balanced_accuracy = 0.271683
+macro_f1 = 0.206787
+weighted_f1 = 0.204882
+macro_precision = 0.205121
+macro_recall = 0.271683
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 2.831721
+Epoch 50, loss = 1.960386
+Epoch 100, loss = 1.923681
+accuracy = 0.262208
+balanced_accuracy = 0.265081
+macro_f1 = 0.208990
+weighted_f1 = 0.206665
+macro_precision = 0.182839
+macro_recall = 0.265081
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 2.983677
+Epoch 50, loss = 1.975743
+Epoch 100, loss = 1.934596
+accuracy = 0.260682
+balanced_accuracy = 0.258815
+macro_f1 = 0.206734
+weighted_f1 = 0.208813
+macro_precision = 0.196730
+macro_recall = 0.258815
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 2.893746
+Epoch 50, loss = 1.972752
+Epoch 100, loss = 1.938119
+accuracy = 0.277467
+balanced_accuracy = 0.279666
+macro_f1 = 0.226252
+weighted_f1 = 0.224575
+macro_precision = 0.201120
+macro_recall = 0.279666
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: XGB
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+[17:37:49] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.288149
+balanced_accuracy = 0.282962
+macro_f1 = 0.253511
+weighted_f1 = 0.257558
+macro_precision = 0.263005
+macro_recall = 0.282962
+n_pca = 1
+Seed: 43
+PCA components: 1
+[17:38:01] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.277721
+balanced_accuracy = 0.281223
+macro_f1 = 0.246077
+weighted_f1 = 0.244333
+macro_precision = 0.245496
+macro_recall = 0.281223
+n_pca = 1
+Seed: 44
+PCA components: 1
+[17:38:04] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.285860
+balanced_accuracy = 0.288410
+macro_f1 = 0.252300
+weighted_f1 = 0.250526
+macro_precision = 0.242958
+macro_recall = 0.288410
+n_pca = 1
+Seed: 45
+PCA components: 1
+[17:38:08] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.285097
+balanced_accuracy = 0.283322
+macro_f1 = 0.251389
+weighted_f1 = 0.252789
+macro_precision = 0.266827
+macro_recall = 0.283322
+n_pca = 1
+Seed: 56
+PCA components: 1
+[17:38:20] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.281027
+balanced_accuracy = 0.285258
+macro_f1 = 0.248210
+weighted_f1 = 0.245979
+macro_precision = 0.259887
+macro_recall = 0.285258
+n_pca = 1
+------------------------------------------------------------------------------------------
+TASK: DAY
+------------------------------------------------------------------------------------------
+y shape: (26208,)
+classes: [0 1 2 3 4 5 6]
+------------------------------------------------------------------------------------------
+MODEL: LR
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 25.661621
+Epoch 50, loss = 1.940220
+Epoch 100, loss = 1.934451
+accuracy = 0.155646
+balanced_accuracy = 0.160358
+macro_f1 = 0.079240
+weighted_f1 = 0.077016
+macro_precision = 0.060736
+macro_recall = 0.160358
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 28.737969
+Epoch 50, loss = 1.949269
+Epoch 100, loss = 1.934398
+accuracy = 0.161750
+balanced_accuracy = 0.164578
+macro_f1 = 0.110748
+weighted_f1 = 0.109422
+macro_precision = 0.137847
+macro_recall = 0.164578
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 25.019502
+Epoch 50, loss = 1.937007
+Epoch 100, loss = 1.934902
+accuracy = 0.168108
+balanced_accuracy = 0.169069
+macro_f1 = 0.130933
+weighted_f1 = 0.130733
+macro_precision = 0.128942
+macro_recall = 0.169069
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 31.488819
+Epoch 50, loss = 1.962092
+Epoch 100, loss = 1.935131
+accuracy = 0.169634
+balanced_accuracy = 0.169419
+macro_f1 = 0.095282
+weighted_f1 = 0.094882
+macro_precision = 0.091152
+macro_recall = 0.169419
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 21.617956
+Epoch 50, loss = 1.948269
+Epoch 100, loss = 1.934797
+accuracy = 0.159969
+balanced_accuracy = 0.158781
+macro_f1 = 0.101321
+weighted_f1 = 0.101564
+macro_precision = 0.102458
+macro_recall = 0.158781
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: SVC
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 11.425137
+Epoch 50, loss = 0.811032
+Epoch 100, loss = 0.811014
+accuracy = 0.156409
+balanced_accuracy = 0.161177
+macro_f1 = 0.078683
+weighted_f1 = 0.076470
+macro_precision = 0.061637
+macro_recall = 0.161177
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 10.700324
+Epoch 50, loss = 0.812632
+Epoch 100, loss = 0.811861
+accuracy = 0.162767
+balanced_accuracy = 0.164723
+macro_f1 = 0.088503
+weighted_f1 = 0.087351
+macro_precision = 0.097229
+macro_recall = 0.164723
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 9.579060
+Epoch 50, loss = 0.813074
+Epoch 100, loss = 0.812759
+accuracy = 0.174720
+balanced_accuracy = 0.176404
+macro_f1 = 0.116062
+weighted_f1 = 0.114689
+macro_precision = 0.098672
+macro_recall = 0.176404
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 12.598629
+Epoch 50, loss = 0.813572
+Epoch 100, loss = 0.813539
+accuracy = 0.166328
+balanced_accuracy = 0.166321
+macro_f1 = 0.095825
+weighted_f1 = 0.095278
+macro_precision = 0.092796
+macro_recall = 0.166321
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 9.408698
+Epoch 50, loss = 0.812053
+Epoch 100, loss = 0.811842
+accuracy = 0.160732
+balanced_accuracy = 0.161393
+macro_f1 = 0.104339
+weighted_f1 = 0.103914
+macro_precision = 0.085897
+macro_recall = 0.161393
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: MLP
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 2.333660
+Epoch 50, loss = 1.885423
+Epoch 100, loss = 1.873520
+accuracy = 0.204985
+balanced_accuracy = 0.204214
+macro_f1 = 0.140533
+weighted_f1 = 0.141179
+macro_precision = 0.124871
+macro_recall = 0.204214
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 2.284646
+Epoch 50, loss = 1.883661
+Epoch 100, loss = 1.880859
+accuracy = 0.201170
+balanced_accuracy = 0.205628
+macro_f1 = 0.138110
+weighted_f1 = 0.136382
+macro_precision = 0.124949
+macro_recall = 0.205628
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 2.330972
+Epoch 50, loss = 1.885836
+Epoch 100, loss = 1.872609
+accuracy = 0.198627
+balanced_accuracy = 0.197180
+macro_f1 = 0.137720
+weighted_f1 = 0.139682
+macro_precision = 0.163959
+macro_recall = 0.197180
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 2.315630
+Epoch 50, loss = 1.882044
+Epoch 100, loss = 1.876256
+accuracy = 0.199644
+balanced_accuracy = 0.201115
+macro_f1 = 0.121480
+weighted_f1 = 0.120743
+macro_precision = 0.126094
+macro_recall = 0.201115
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 2.224873
+Epoch 50, loss = 1.895953
+Epoch 100, loss = 1.883817
+accuracy = 0.187691
+balanced_accuracy = 0.185421
+macro_f1 = 0.110750
+weighted_f1 = 0.112344
+macro_precision = 0.112047
+macro_recall = 0.185421
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: XGB
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+[17:40:44] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.214395
+balanced_accuracy = 0.212365
+macro_f1 = 0.191594
+weighted_f1 = 0.192698
+macro_precision = 0.203332
+macro_recall = 0.212365
+n_pca = 1
+Seed: 43
+PCA components: 1
+[17:40:56] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.210580
+balanced_accuracy = 0.212857
+macro_f1 = 0.183907
+weighted_f1 = 0.182866
+macro_precision = 0.199561
+macro_recall = 0.212857
+n_pca = 1
+Seed: 44
+PCA components: 1
+[17:40:58] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.198118
+balanced_accuracy = 0.199357
+macro_f1 = 0.176791
+weighted_f1 = 0.176005
+macro_precision = 0.185681
+macro_recall = 0.199357
+n_pca = 1
+Seed: 45
+PCA components: 1
+[17:41:00] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.199898
+balanced_accuracy = 0.201220
+macro_f1 = 0.179783
+weighted_f1 = 0.179163
+macro_precision = 0.191380
+macro_recall = 0.201220
+n_pca = 1
+Seed: 56
+PCA components: 1
+[17:41:11] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.198118
+balanced_accuracy = 0.197957
+macro_f1 = 0.176588
+weighted_f1 = 0.176286
+macro_precision = 0.184950
+macro_recall = 0.197957
+n_pca = 1
+------------------------------------------------------------------------------------------
+TASK: WEEK
+------------------------------------------------------------------------------------------
+y shape: (26208,)
+classes: [0 1 2 3]
+------------------------------------------------------------------------------------------
+MODEL: LR
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 19.199836
+Epoch 50, loss = 1.378010
+Epoch 100, loss = 1.377902
+accuracy = 0.299847
+balanced_accuracy = 0.250000
+macro_f1 = 0.115339
+weighted_f1 = 0.138337
+macro_precision = 0.074962
+macro_recall = 0.250000
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 24.423827
+Epoch 50, loss = 1.379576
+Epoch 100, loss = 1.377556
+accuracy = 0.297304
+balanced_accuracy = 0.250000
+macro_f1 = 0.114585
+weighted_f1 = 0.136267
+macro_precision = 0.074326
+macro_recall = 0.250000
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 22.432522
+Epoch 50, loss = 1.380740
+Epoch 100, loss = 1.378170
+accuracy = 0.306714
+balanced_accuracy = 0.250000
+macro_f1 = 0.117361
+weighted_f1 = 0.143985
+macro_precision = 0.076679
+macro_recall = 0.250000
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 25.688639
+Epoch 50, loss = 1.388060
+Epoch 100, loss = 1.379141
+accuracy = 0.326806
+balanced_accuracy = 0.250000
+macro_f1 = 0.123155
+weighted_f1 = 0.160991
+macro_precision = 0.081701
+macro_recall = 0.250000
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 19.627925
+Epoch 50, loss = 1.379496
+Epoch 100, loss = 1.377950
+accuracy = 0.305188
+balanced_accuracy = 0.250000
+macro_f1 = 0.116913
+weighted_f1 = 0.142722
+macro_precision = 0.076297
+macro_recall = 0.250000
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: SVC
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 7.486235
+Epoch 50, loss = 0.691725
+Epoch 100, loss = 0.691879
+accuracy = 0.299847
+balanced_accuracy = 0.250000
+macro_f1 = 0.115339
+weighted_f1 = 0.138337
+macro_precision = 0.074962
+macro_recall = 0.250000
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 9.636638
+Epoch 50, loss = 0.691200
+Epoch 100, loss = 0.691535
+accuracy = 0.297304
+balanced_accuracy = 0.250000
+macro_f1 = 0.114585
+weighted_f1 = 0.136267
+macro_precision = 0.074326
+macro_recall = 0.250000
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 8.681264
+Epoch 50, loss = 0.693578
+Epoch 100, loss = 0.692999
+accuracy = 0.306714
+balanced_accuracy = 0.250000
+macro_f1 = 0.117361
+weighted_f1 = 0.143985
+macro_precision = 0.076679
+macro_recall = 0.250000
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 11.300342
+Epoch 50, loss = 0.696517
+Epoch 100, loss = 0.696306
+accuracy = 0.326806
+balanced_accuracy = 0.250000
+macro_f1 = 0.123155
+weighted_f1 = 0.160991
+macro_precision = 0.081701
+macro_recall = 0.250000
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 9.268262
+Epoch 50, loss = 0.692552
+Epoch 100, loss = 0.692653
+accuracy = 0.305188
+balanced_accuracy = 0.250000
+macro_f1 = 0.116913
+weighted_f1 = 0.142722
+macro_precision = 0.076297
+macro_recall = 0.250000
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: MLP
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+Epoch 1, loss = 1.740093
+Epoch 50, loss = 1.377839
+Epoch 100, loss = 1.376731
+accuracy = 0.299084
+balanced_accuracy = 0.249481
+macro_f1 = 0.116189
+weighted_f1 = 0.139079
+macro_precision = 0.116539
+macro_recall = 0.249481
+n_pca = 1
+Seed: 43
+PCA components: 1
+Epoch 1, loss = 1.665058
+Epoch 50, loss = 1.378795
+Epoch 100, loss = 1.377088
+accuracy = 0.297304
+balanced_accuracy = 0.250000
+macro_f1 = 0.114585
+weighted_f1 = 0.136267
+macro_precision = 0.074326
+macro_recall = 0.250000
+n_pca = 1
+Seed: 44
+PCA components: 1
+Epoch 1, loss = 1.811776
+Epoch 50, loss = 1.385651
+Epoch 100, loss = 1.377044
+accuracy = 0.306714
+balanced_accuracy = 0.250000
+macro_f1 = 0.117361
+weighted_f1 = 0.143985
+macro_precision = 0.076679
+macro_recall = 0.250000
+n_pca = 1
+Seed: 45
+PCA components: 1
+Epoch 1, loss = 1.839642
+Epoch 50, loss = 1.381093
+Epoch 100, loss = 1.378202
+accuracy = 0.326806
+balanced_accuracy = 0.250000
+macro_f1 = 0.123155
+weighted_f1 = 0.160991
+macro_precision = 0.081701
+macro_recall = 0.250000
+n_pca = 1
+Seed: 56
+PCA components: 1
+Epoch 1, loss = 1.696584
+Epoch 50, loss = 1.380048
+Epoch 100, loss = 1.377072
+accuracy = 0.305188
+balanced_accuracy = 0.250000
+macro_f1 = 0.116913
+weighted_f1 = 0.142722
+macro_precision = 0.076297
+macro_recall = 0.250000
+n_pca = 1
+------------------------------------------------------------------------------------------
+MODEL: XGB
+------------------------------------------------------------------------------------------
+Seed: 42
+PCA components: 1
+[17:43:36] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.297050
+balanced_accuracy = 0.262595
+macro_f1 = 0.210675
+weighted_f1 = 0.226084
+macro_precision = 0.276864
+macro_recall = 0.262595
+n_pca = 1
+Seed: 43
+PCA components: 1
+[17:43:47] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.300356
+balanced_accuracy = 0.264463
+macro_f1 = 0.199131
+weighted_f1 = 0.214671
+macro_precision = 0.287436
+macro_recall = 0.264463
+n_pca = 1
+Seed: 44
+PCA components: 1
+[17:43:50] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.301882
+balanced_accuracy = 0.262455
+macro_f1 = 0.210955
+weighted_f1 = 0.228937
+macro_precision = 0.273599
+macro_recall = 0.262455
+n_pca = 1
+Seed: 45
+PCA components: 1
+[17:43:51] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.315870
+balanced_accuracy = 0.263748
+macro_f1 = 0.220182
+weighted_f1 = 0.245009
+macro_precision = 0.284837
+macro_recall = 0.263748
+n_pca = 1
+Seed: 56
+PCA components: 1
+[17:44:02] WARNING: /home/conda/feedstock_root/build_artifacts/xgboost-split_1700181168148/work/src/learner.cc:767: 
+Parameters: { "device" } are not used.
+
+accuracy = 0.301373
+balanced_accuracy = 0.260445
+macro_f1 = 0.200815
+weighted_f1 = 0.219159
+macro_precision = 0.286910
+macro_recall = 0.260445
+n_pca = 1
+==========================================================================================
+Saved per-seed results to: results/PEMS03/torch_blis_PEMS03_HOUR_DAY_WEEK_LR_SVC_MLP_XGB_W2_L1_2_3_M1_20260702_174403_per_seed.csv
+Saved summary results to: results/PEMS03/torch_blis_PEMS03_HOUR_DAY_WEEK_LR_SVC_MLP_XGB_W2_L1_2_3_M1_20260702_174403_summary.csv
+==========================================================================================
+   dataset  task wavelet_type  ...  macro_recall_mean macro_recall_std n_pca_mean
+0   PEMS03   DAY           W2  ...           0.164441         0.004357        1.0
+1   PEMS03   DAY           W2  ...           0.198712         0.007251        1.0
+2   PEMS03   DAY           W2  ...           0.166004         0.005558        1.0
+3   PEMS03   DAY           W2  ...           0.204751         0.006503        1.0
+4   PEMS03  HOUR           W2  ...           0.188675         0.013404        1.0
+5   PEMS03  HOUR           W2  ...           0.268046         0.007094        1.0
+6   PEMS03  HOUR           W2  ...           0.169053         0.010275        1.0
+7   PEMS03  HOUR           W2  ...           0.284235         0.002450        1.0
+8   PEMS03  WEEK           W2  ...           0.250000         0.000000        1.0
+9   PEMS03  WEEK           W2  ...           0.249896         0.000208        1.0
+10  PEMS03  WEEK           W2  ...           0.250000         0.000000        1.0
+11  PEMS03  WEEK           W2  ...           0.262741         0.001368        1.0
+
+[12 rows x 20 columns]
+Finished GPU BLIS W2 run for PEMS03
+Date: Thu Jul  2 17:44:06 MDT 2026
