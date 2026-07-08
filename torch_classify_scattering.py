@@ -1,12 +1,13 @@
 import os
 import sys
 import argparse
+import itertools
 import numpy as np
 import pandas as pd
 import torch
 
 from datetime import datetime
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -121,7 +122,72 @@ def split_like_blis(X_features, y, seed):
     return X_train, X_test, y_train, y_test
 
 
-def torch_standardize(X_train, X_test, eps=1e-12):
+def set_seed(seed, device):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(seed)
+
+
+def torch_fit_pca(X_train, pca_variance):
+    """
+    Match the BLIS-Net behavior:
+
+    pca_variance == 1      -> no PCA
+    0 < pca_variance < 1   -> keep enough components for that variance
+    pca_variance > 1       -> use int(pca_variance) fixed components
+    """
+    if pca_variance == 1:
+        return X_train, None, -1
+
+    if pca_variance <= 0:
+        raise ValueError("pca_variance must be positive.")
+
+    mean = X_train.mean(dim=0, keepdim=True)
+    X_train_centered = X_train - mean
+
+    U, S, Vh = torch.linalg.svd(
+        X_train_centered,
+        full_matrices=False,
+    )
+
+    max_components = Vh.shape[0]
+
+    if pca_variance > 1:
+        num_components = int(pca_variance)
+        num_components = min(num_components, max_components)
+
+    else:
+        eigvals = S ** 2
+        explained = eigvals / eigvals.sum()
+        cumulative = torch.cumsum(explained, dim=0)
+
+        num_components = int(torch.searchsorted(cumulative, pca_variance).item()) + 1
+        num_components = min(num_components, max_components)
+
+    V = Vh[:num_components].T
+
+    X_train_pca = X_train_centered @ V
+
+    pca_state = {
+        "mean": mean,
+        "V": V,
+    }
+
+    print(f"PCA components: {num_components}")
+
+    return X_train_pca, pca_state, num_components
+
+
+def torch_apply_pca(X, pca_state):
+    if pca_state is None:
+        return X
+
+    return (X - pca_state["mean"]) @ pca_state["V"]
+
+
+def torch_fit_standardizer(X_train, eps=1e-12):
     mean = X_train.mean(dim=0, keepdim=True)
     std = X_train.std(dim=0, keepdim=True)
 
@@ -131,40 +197,25 @@ def torch_standardize(X_train, X_test, eps=1e-12):
         torch.ones_like(std),
     )
 
-    X_train = (X_train - mean) / std
-    X_test = (X_test - mean) / std
+    scaler_state = {
+        "mean": mean,
+        "std": std,
+    }
 
-    return X_train, X_test
+    return scaler_state
 
 
-def torch_pca(X_train, X_test, pca_variance):
-    if pca_variance >= 1.0:
-        return X_train, X_test, -1
+def torch_apply_standardizer(X, scaler_state):
+    return (X - scaler_state["mean"]) / scaler_state["std"]
 
-    mean = X_train.mean(dim=0, keepdim=True)
 
-    X_train_centered = X_train - mean
-    X_test_centered = X_test - mean
+def torch_standardize_fit_transform(X_train, X_test):
+    scaler_state = torch_fit_standardizer(X_train)
 
-    U, S, Vh = torch.linalg.svd(
-        X_train_centered,
-        full_matrices=False,
-    )
+    X_train = torch_apply_standardizer(X_train, scaler_state)
+    X_test = torch_apply_standardizer(X_test, scaler_state)
 
-    eigvals = S ** 2
-    explained = eigvals / eigvals.sum()
-    cumulative = torch.cumsum(explained, dim=0)
-
-    num_components = int(torch.searchsorted(cumulative, pca_variance).item()) + 1
-
-    V = Vh[:num_components].T
-
-    X_train_pca = X_train_centered @ V
-    X_test_pca = X_test_centered @ V
-
-    print(f"PCA components: {num_components}")
-
-    return X_train_pca, X_test_pca, num_components
+    return X_train, X_test, scaler_state
 
 
 class TorchLR(torch.nn.Module):
@@ -177,43 +228,41 @@ class TorchLR(torch.nn.Module):
         return self.linear(x)
 
 
-class TorchLinearSVC(torch.nn.Module):
-    def __init__(self, input_dim, num_classes):
-        super().__init__()
-
-        self.linear = torch.nn.Linear(input_dim, num_classes)
-
-    def forward(self, x):
-        return self.linear(x)
-
-
 class TorchMLP(torch.nn.Module):
-    def __init__(self, input_dim, num_classes):
+    def __init__(self, input_dim, num_classes, hidden_layer_sizes):
         super().__init__()
 
-        self.net = torch.nn.Sequential(
-            torch.nn.Linear(input_dim, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
-            torch.nn.ReLU(),
-            torch.nn.Linear(128, num_classes),
-        )
+        layers = []
+        previous_dim = input_dim
+
+        for hidden_dim in hidden_layer_sizes:
+            layers.append(torch.nn.Linear(previous_dim, hidden_dim))
+            layers.append(torch.nn.ReLU())
+            previous_dim = hidden_dim
+
+        layers.append(torch.nn.Linear(previous_dim, num_classes))
+
+        self.net = torch.nn.Sequential(*layers)
 
     def forward(self, x):
         return self.net(x)
 
 
-def multiclass_hinge_loss(scores, y):
-    row_idx = torch.arange(scores.shape[0], device=scores.device)
+def build_torch_model(model_name, input_dim, num_classes, params):
+    if model_name == "LR":
+        return TorchLR(input_dim, num_classes)
 
-    correct_scores = scores[row_idx, y].view(-1, 1)
+    if model_name == "MLP":
+        return TorchMLP(
+            input_dim=input_dim,
+            num_classes=num_classes,
+            hidden_layer_sizes=params["hidden_layer_sizes"],
+        )
 
-    margins = scores - correct_scores + 1.0
-    margins[row_idx, y] = 0.0
-
-    loss = torch.clamp(margins, min=0.0).mean()
-
-    return loss
+    raise ValueError(
+        f"Unknown torch model: {model_name}. "
+        "SVC is intentionally left out for now."
+    )
 
 
 def compute_metrics(y_true, y_pred):
@@ -233,36 +282,28 @@ def train_torch_model(
     model_name,
     X_train,
     y_train,
-    X_test,
-    y_test,
+    params,
     epochs,
     batch_size,
-    lr,
-    weight_decay,
     device,
+    verbose=False,
 ):
     input_dim = X_train.shape[1]
     num_classes = int(torch.max(y_train).item()) + 1
 
-    if model_name == "LR":
-        model = TorchLR(input_dim, num_classes).to(device)
-        loss_fn = torch.nn.CrossEntropyLoss()
+    model = build_torch_model(
+        model_name=model_name,
+        input_dim=input_dim,
+        num_classes=num_classes,
+        params=params,
+    ).to(device)
 
-    elif model_name == "SVC":
-        model = TorchLinearSVC(input_dim, num_classes).to(device)
-        loss_fn = multiclass_hinge_loss
-
-    elif model_name == "MLP":
-        model = TorchMLP(input_dim, num_classes).to(device)
-        loss_fn = torch.nn.CrossEntropyLoss()
-
-    else:
-        raise ValueError(f"Unknown torch model: {model_name}")
+    loss_fn = torch.nn.CrossEntropyLoss()
 
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=lr,
-        weight_decay=weight_decay,
+        lr=params["lr"],
+        weight_decay=params["weight_decay"],
     )
 
     n_train = X_train.shape[0]
@@ -291,45 +332,483 @@ def train_torch_model(
 
             total_loss += loss.item() * xb.shape[0]
 
-        if epoch == 1 or epoch % 50 == 0 or epoch == epochs:
+        if verbose and (epoch == 1 or epoch % 50 == 0 or epoch == epochs):
             print(f"Epoch {epoch}, loss = {total_loss / n_train:.6f}")
 
+    return model
+
+
+def predict_torch_model(model, X):
     model.eval()
 
     with torch.no_grad():
-        scores = model(X_test)
+        scores = model(X)
         y_pred = torch.argmax(scores, dim=1)
 
-    y_true = y_test.detach().cpu().numpy()
-    y_pred = y_pred.detach().cpu().numpy()
-
-    return compute_metrics(y_true, y_pred)
+    return y_pred
 
 
-def train_xgb_gpu(X_train, y_train, X_test, y_test):
+def get_torch_param_grid(model_name, input_dim, args):
+    """
+    Manual Torch grid search.
+
+    LR approximates sklearn LogisticRegression C by using weight_decay = 1 / C.
+    MLP uses the same hidden layer choices as the BLIS-Net sklearn grid.
+    """
+    lr_values = args.lr_values if args.lr_values is not None else [args.lr]
+
+    if model_name == "LR":
+        grid = []
+
+        for C, lr in itertools.product([0.1, 1.0, 10.0], lr_values):
+            grid.append(
+                {
+                    "C": C,
+                    "lr": lr,
+                    "weight_decay": 1.0 / C,
+                }
+            )
+
+        return grid
+
+    if model_name == "MLP":
+        hidden_options = [
+            (input_dim // 2, input_dim // 4),
+            (input_dim // 2, input_dim // 4, input_dim // 8),
+            (150, 50),
+        ]
+
+        grid = []
+
+        for hidden_layer_sizes, lr in itertools.product(hidden_options, lr_values):
+            grid.append(
+                {
+                    "hidden_layer_sizes": hidden_layer_sizes,
+                    "activation": "relu",
+                    "alpha": 0.01,
+                    "lr": lr,
+                    "weight_decay": 0.01,
+                }
+            )
+
+        return grid
+
+    raise ValueError(
+        f"Unknown torch model for grid search: {model_name}. "
+        "SVC is intentionally left out for now."
+    )
+
+
+def torch_cross_val_score(
+    model_name,
+    X_train,
+    y_train,
+    params,
+    epochs,
+    batch_size,
+    cv_folds,
+    device,
+    seed,
+):
+    y_train_np = y_train.detach().cpu().numpy()
+
+    cv = StratifiedKFold(
+        n_splits=cv_folds,
+        shuffle=True,
+        random_state=seed,
+    )
+
+    fold_scores = []
+
+    for fold_id, (inner_train_idx, inner_val_idx) in enumerate(
+        cv.split(np.zeros(len(y_train_np)), y_train_np),
+        start=1,
+    ):
+        inner_train_idx = torch.as_tensor(
+            inner_train_idx,
+            dtype=torch.long,
+            device=device,
+        )
+
+        inner_val_idx = torch.as_tensor(
+            inner_val_idx,
+            dtype=torch.long,
+            device=device,
+        )
+
+        X_inner_train = X_train[inner_train_idx]
+        y_inner_train = y_train[inner_train_idx]
+
+        X_inner_val = X_train[inner_val_idx]
+        y_inner_val = y_train[inner_val_idx]
+
+        # StandardScaler is inside the BLIS-Net sklearn Pipeline,
+        # so we fit it inside each CV fold.
+        X_inner_train, X_inner_val, _ = torch_standardize_fit_transform(
+            X_inner_train,
+            X_inner_val,
+        )
+
+        set_seed(seed + fold_id, device)
+
+        model = train_torch_model(
+            model_name=model_name,
+            X_train=X_inner_train,
+            y_train=y_inner_train,
+            params=params,
+            epochs=epochs,
+            batch_size=batch_size,
+            device=device,
+            verbose=False,
+        )
+
+        y_pred = predict_torch_model(model, X_inner_val)
+
+        score = accuracy_score(
+            y_inner_val.detach().cpu().numpy(),
+            y_pred.detach().cpu().numpy(),
+        )
+
+        fold_scores.append(score)
+
+    return float(np.mean(fold_scores))
+
+
+def train_torch_with_grid_search(
+    model_name,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    args,
+    device,
+    seed,
+):
+    input_dim = X_train.shape[1]
+
+    param_grid = get_torch_param_grid(
+        model_name=model_name,
+        input_dim=input_dim,
+        args=args,
+    )
+
+    best_score = -np.inf
+    best_params = None
+
+    print(f"Manual Torch grid search for {model_name}")
+    print(f"Number of settings: {len(param_grid)}")
+
+    for params in param_grid:
+        cv_score = torch_cross_val_score(
+            model_name=model_name,
+            X_train=X_train,
+            y_train=y_train,
+            params=params,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            cv_folds=args.cv_folds,
+            device=device,
+            seed=seed,
+        )
+
+        print(f"params={params}, cv_accuracy={cv_score:.6f}")
+
+        if cv_score > best_score:
+            best_score = cv_score
+            best_params = params
+
+    print(f"Best params: {best_params}")
+    print(f"Best CV accuracy: {best_score:.6f}")
+
+    # Refit StandardScaler on the full training split before final model,
+    # matching GridSearchCV refit behavior.
+    X_train_scaled, X_test_scaled, _ = torch_standardize_fit_transform(
+        X_train,
+        X_test,
+    )
+
+    set_seed(seed, device)
+
+    model = train_torch_model(
+        model_name=model_name,
+        X_train=X_train_scaled,
+        y_train=y_train,
+        params=best_params,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        device=device,
+        verbose=True,
+    )
+
+    y_pred = predict_torch_model(model, X_test_scaled)
+
+    y_true_np = y_test.detach().cpu().numpy()
+    y_pred_np = y_pred.detach().cpu().numpy()
+
+    metrics = compute_metrics(y_true_np, y_pred_np)
+    metrics["best_cv_accuracy"] = best_score
+    metrics["best_params"] = str(best_params)
+
+    return metrics
+
+
+def train_torch_without_grid_search(
+    model_name,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    args,
+    device,
+    seed,
+):
+    if model_name == "LR":
+        params = {
+            "lr": args.lr,
+            "weight_decay": args.weight_decay,
+        }
+
+    elif model_name == "MLP":
+        params = {
+            "hidden_layer_sizes": (256, 128),
+            "lr": args.lr,
+            "weight_decay": args.weight_decay,
+        }
+
+    else:
+        raise ValueError(
+            f"Unknown torch model: {model_name}. "
+            "SVC is intentionally left out for now."
+        )
+
+    X_train_scaled, X_test_scaled, _ = torch_standardize_fit_transform(
+        X_train,
+        X_test,
+    )
+
+    set_seed(seed, device)
+
+    model = train_torch_model(
+        model_name=model_name,
+        X_train=X_train_scaled,
+        y_train=y_train,
+        params=params,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        device=device,
+        verbose=True,
+    )
+
+    y_pred = predict_torch_model(model, X_test_scaled)
+
+    y_true_np = y_test.detach().cpu().numpy()
+    y_pred_np = y_pred.detach().cpu().numpy()
+
+    metrics = compute_metrics(y_true_np, y_pred_np)
+    metrics["best_cv_accuracy"] = np.nan
+    metrics["best_params"] = str(params)
+
+    return metrics
+
+
+def get_xgb_param_grid():
+    grid = []
+
+    for n_estimators, learning_rate in itertools.product([50, 100], [0.05, 0.1]):
+        grid.append(
+            {
+                "n_estimators": n_estimators,
+                "learning_rate": learning_rate,
+                "max_depth": 6,
+            }
+        )
+
+    return grid
+
+
+def build_xgb_model(params, device):
     from xgboost import XGBClassifier
 
+    xgb_device = "cuda" if device.type == "cuda" else "cpu"
+
+    model = XGBClassifier(
+        n_estimators=params["n_estimators"],
+        learning_rate=params["learning_rate"],
+        max_depth=params["max_depth"],
+        objective="multi:softprob",
+        eval_metric="mlogloss",
+        tree_method="hist",
+        device=xgb_device,
+    )
+
+    return model
+
+
+def xgb_cross_val_score(
+    X_train,
+    y_train,
+    params,
+    cv_folds,
+    device,
+    seed,
+):
     X_train_np = X_train.detach().cpu().numpy()
-    X_test_np = X_test.detach().cpu().numpy()
+    y_train_np = y_train.detach().cpu().numpy()
+
+    cv = StratifiedKFold(
+        n_splits=cv_folds,
+        shuffle=True,
+        random_state=seed,
+    )
+
+    fold_scores = []
+
+    for fold_id, (inner_train_idx, inner_val_idx) in enumerate(
+        cv.split(X_train_np, y_train_np),
+        start=1,
+    ):
+        X_inner_train = torch.as_tensor(
+            X_train_np[inner_train_idx],
+            dtype=torch.float32,
+            device=device,
+        )
+
+        X_inner_val = torch.as_tensor(
+            X_train_np[inner_val_idx],
+            dtype=torch.float32,
+            device=device,
+        )
+
+        # StandardScaler is inside the BLIS-Net sklearn Pipeline,
+        # so we fit it inside each CV fold.
+        X_inner_train, X_inner_val, _ = torch_standardize_fit_transform(
+            X_inner_train,
+            X_inner_val,
+        )
+
+        X_inner_train_np = X_inner_train.detach().cpu().numpy()
+        X_inner_val_np = X_inner_val.detach().cpu().numpy()
+
+        y_inner_train_np = y_train_np[inner_train_idx]
+        y_inner_val_np = y_train_np[inner_val_idx]
+
+        model = build_xgb_model(
+            params=params,
+            device=device,
+        )
+
+        model.fit(X_inner_train_np, y_inner_train_np)
+
+        y_pred = model.predict(X_inner_val_np)
+
+        score = accuracy_score(y_inner_val_np, y_pred)
+        fold_scores.append(score)
+
+    return float(np.mean(fold_scores))
+
+
+def train_xgb_with_grid_search(
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    args,
+    device,
+    seed,
+):
+    param_grid = get_xgb_param_grid()
+
+    best_score = -np.inf
+    best_params = None
+
+    print("Manual XGB grid search")
+    print(f"Number of settings: {len(param_grid)}")
+
+    for params in param_grid:
+        cv_score = xgb_cross_val_score(
+            X_train=X_train,
+            y_train=y_train,
+            params=params,
+            cv_folds=args.cv_folds,
+            device=device,
+            seed=seed,
+        )
+
+        print(f"params={params}, cv_accuracy={cv_score:.6f}")
+
+        if cv_score > best_score:
+            best_score = cv_score
+            best_params = params
+
+    print(f"Best params: {best_params}")
+    print(f"Best CV accuracy: {best_score:.6f}")
+
+    X_train_scaled, X_test_scaled, _ = torch_standardize_fit_transform(
+        X_train,
+        X_test,
+    )
+
+    X_train_np = X_train_scaled.detach().cpu().numpy()
+    X_test_np = X_test_scaled.detach().cpu().numpy()
 
     y_train_np = y_train.detach().cpu().numpy()
     y_test_np = y_test.detach().cpu().numpy()
 
-    model = XGBClassifier(
-        n_estimators=100,
-        learning_rate=0.1,
-        max_depth=6,
-        objective="multi:softprob",
-        eval_metric="mlogloss",
-        tree_method="hist",
-        device="cuda",
+    model = build_xgb_model(
+        params=best_params,
+        device=device,
     )
 
     model.fit(X_train_np, y_train_np)
 
     y_pred = model.predict(X_test_np)
 
-    return compute_metrics(y_test_np, y_pred)
+    metrics = compute_metrics(y_test_np, y_pred)
+    metrics["best_cv_accuracy"] = best_score
+    metrics["best_params"] = str(best_params)
+
+    return metrics
+
+
+def train_xgb_without_grid_search(
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    args,
+    device,
+):
+    params = {
+        "n_estimators": 100,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+    }
+
+    X_train_scaled, X_test_scaled, _ = torch_standardize_fit_transform(
+        X_train,
+        X_test,
+    )
+
+    X_train_np = X_train_scaled.detach().cpu().numpy()
+    X_test_np = X_test_scaled.detach().cpu().numpy()
+
+    y_train_np = y_train.detach().cpu().numpy()
+    y_test_np = y_test.detach().cpu().numpy()
+
+    model = build_xgb_model(
+        params=params,
+        device=device,
+    )
+
+    model.fit(X_train_np, y_train_np)
+
+    y_pred = model.predict(X_test_np)
+
+    metrics = compute_metrics(y_test_np, y_pred)
+    metrics["best_cv_accuracy"] = np.nan
+    metrics["best_params"] = str(params)
+
+    return metrics
 
 
 def run_one_seed(
@@ -337,18 +816,10 @@ def run_one_seed(
     y,
     model_name,
     seed,
-    pca_variance,
-    epochs,
-    batch_size,
-    lr,
-    weight_decay,
+    args,
     device,
 ):
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-
-    if device.type == "cuda":
-        torch.cuda.manual_seed_all(seed)
+    set_seed(seed, device)
 
     X_train_np, X_test_np, y_train_np, y_test_np = split_like_blis(
         X_features,
@@ -380,30 +851,67 @@ def run_one_seed(
         device=device,
     )
 
-    X_train, X_test = torch_standardize(X_train, X_test)
-    X_train, X_test, n_pca = torch_pca(X_train, X_test, pca_variance)
+    # Match BLIS-Net order:
+    # flatten -> PCA if requested -> StandardScaler inside CV/final training.
+    X_train, pca_state, n_pca = torch_fit_pca(
+        X_train,
+        args.pca_variance,
+    )
+
+    X_test = torch_apply_pca(
+        X_test,
+        pca_state,
+    )
+
+    if model_name == "SVC":
+        raise ValueError("SVC is intentionally left out for now.")
 
     if model_name == "XGB":
-        metrics = train_xgb_gpu(
-            X_train,
-            y_train,
-            X_test,
-            y_test,
-        )
+        if args.no_grid_search:
+            metrics = train_xgb_without_grid_search(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                args=args,
+                device=device,
+            )
+
+        else:
+            metrics = train_xgb_with_grid_search(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                args=args,
+                device=device,
+                seed=seed,
+            )
 
     else:
-        metrics = train_torch_model(
-            model_name=model_name,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
-            epochs=epochs,
-            batch_size=batch_size,
-            lr=lr,
-            weight_decay=weight_decay,
-            device=device,
-        )
+        if args.no_grid_search:
+            metrics = train_torch_without_grid_search(
+                model_name=model_name,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                args=args,
+                device=device,
+                seed=seed,
+            )
+
+        else:
+            metrics = train_torch_with_grid_search(
+                model_name=model_name,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                args=args,
+                device=device,
+                seed=seed,
+            )
 
     metrics["n_pca"] = n_pca
 
@@ -433,6 +941,9 @@ def summarize_results(rows, metric_names):
             row[f"{metric}_std"] = group[metric].std(ddof=0)
 
         row["n_pca_mean"] = group["n_pca"].mean()
+
+        if "best_cv_accuracy" in group.columns:
+            row["best_cv_accuracy_mean"] = group["best_cv_accuracy"].mean()
 
         summary_rows.append(row)
 
@@ -472,7 +983,8 @@ def main():
         "--models",
         nargs="+",
         type=str,
-        default=["LR", "SVC", "MLP", "XGB"],
+        default=["LR", "MLP", "XGB"],
+        help="Torch/XGB models to run. SVC is intentionally left out for now.",
     )
 
     parser.add_argument(
@@ -482,12 +994,28 @@ def main():
         default=[42, 43, 44, 45, 56],
     )
 
-    parser.add_argument("--pca_variance", type=float, default=0.99)
+    parser.add_argument(
+        "--pca_variance",
+        type=float,
+        default=1.0,
+        help="PCA behavior: 1 means no PCA, 0.99 keeps 99 percent variance, >1 uses fixed components.",
+    )
 
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--lr", type=float, default=1e-3)
+
+    parser.add_argument(
+        "--lr_values",
+        nargs="+",
+        type=float,
+        default=None,
+        help="Optional learning-rate values for manual Torch grid search.",
+    )
+
     parser.add_argument("--weight_decay", type=float, default=1e-4)
+    parser.add_argument("--cv_folds", type=int, default=3)
+    parser.add_argument("--no_grid_search", action="store_true")
 
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--force_recompute", action="store_true")
@@ -512,7 +1040,8 @@ def main():
     os.makedirs(args.results_dir, exist_ok=True)
 
     print("=" * 90)
-    print("BLIS W2 MOMENTS FROM new_class.py + TORCH CLASSIFICATION")
+    print("BLIS MOMENTS FROM new_class.py + TORCH CLASSIFICATION")
+    print("SVC intentionally left out for now")
     print("=" * 90)
     print(f"Device: {device}")
 
@@ -598,6 +1127,9 @@ def main():
             print(f"classes: {np.unique(y)}")
 
             for model_name in args.models:
+                if model_name == "SVC":
+                    raise ValueError("SVC is intentionally left out for now.")
+
                 print("-" * 90)
                 print(f"MODEL: {model_name}")
                 print("-" * 90)
@@ -610,11 +1142,7 @@ def main():
                         y=y,
                         model_name=model_name,
                         seed=seed,
-                        pca_variance=args.pca_variance,
-                        epochs=args.epochs,
-                        batch_size=args.batch_size,
-                        lr=args.lr,
-                        weight_decay=args.weight_decay,
+                        args=args,
                         device=device,
                     )
 
@@ -631,7 +1159,10 @@ def main():
                         "epochs": args.epochs,
                         "batch_size": args.batch_size,
                         "lr": args.lr,
+                        "lr_values": str(args.lr_values),
                         "weight_decay": args.weight_decay,
+                        "cv_folds": args.cv_folds,
+                        "no_grid_search": args.no_grid_search,
                         "device": str(device),
                     }
 
@@ -646,6 +1177,8 @@ def main():
                     print(f"macro_precision = {metrics['macro_precision']:.6f}")
                     print(f"macro_recall = {metrics['macro_recall']:.6f}")
                     print(f"n_pca = {metrics['n_pca']}")
+                    print(f"best_cv_accuracy = {metrics['best_cv_accuracy']}")
+                    print(f"best_params = {metrics['best_params']}")
 
     metric_names = [
         "accuracy",
