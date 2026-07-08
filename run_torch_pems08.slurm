@@ -20,7 +20,7 @@ mkdir -p results/PEMS08
 source ~/miniforge3/etc/profile.d/conda.sh
 conda activate blis
 
-echo "Starting GPU BLIS W2 run for PEMS08"
+echo "Starting GPU BLIS W2 Torch classifier run for PEMS08"
 echo "Date: $(date)"
 echo "Working directory: $(pwd)"
 echo "Python: $(which python)"
@@ -36,15 +36,16 @@ python torch_classify_scattering.py \
     --highest_moment 3 \
     --layer_list 1 2 3 \
     --moment_list 1 \
-    --models LR SVC MLP XGB \
+    --models LR MLP XGB \
     --seeds 42 43 44 45 56 \
     --pca_variance 0.99 \
     --epochs 100 \
     --batch_size 512 \
     --lr 1e-3 \
     --weight_decay 1e-4 \
+    --cv_folds 3 \
     --device cuda \
     --results_dir results/PEMS08
 
-echo "Finished GPU BLIS W2 run for PEMS08"
+echo "Finished GPU BLIS W2 Torch classifier run for PEMS08"
 echo "Date: $(date)"
